@@ -1,0 +1,16 @@
+[package]
+name = "del-dlpack"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+cuda = [
+    "dep:del-cudarc-sys"
+]
+
+[dependencies]
+dlpack = "0.2.0"
+pyo3 = { version = "0.26.0", features = ["extension-module"] }
+
+# for push
+del-cudarc-sys = {git = "https://github.com/nobuyuki83/del-cudarc.git", optional = true}
