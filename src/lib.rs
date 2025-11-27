@@ -338,23 +338,6 @@ macro_rules! ensure_eq {
     };
 }
 
-pub fn check_2d_tensor<T: ToDataTypeCode>(
-    t: &Tensor,
-    d0: i64,
-    d1: i64,
-    device_type: dlpack::DeviceTypeCode,
-) -> Result<(), String> {
-    ensure_eq!(t.byte_offset, 0, "{}", t.byte_offset);
-    let shape = unsafe { std::slice::from_raw_parts(t.shape, t.ndim as usize) };
-    ensure_eq!(shape.len(), 2, "{}", shape.len());
-    ensure_eq!(shape[0], d0);
-    ensure_eq!(shape[1], d1);
-    ensure!(is_equal::<T>(&t.dtype));
-    ensure!(unsafe { is_tensor_c_contiguous(t) });
-    ensure_eq!(t.ctx.device_type, device_type);
-    Ok(())
-}
-
 pub fn check_1d_tensor<T: ToDataTypeCode>(
     t: &Tensor,
     d0: i64,
@@ -385,6 +368,50 @@ pub fn check_1d_tensor<T: ToDataTypeCode>(
     );
     Ok(())
 }
+
+pub fn check_2d_tensor<T: ToDataTypeCode>(
+    t: &Tensor,
+    d0: i64,
+    d1: i64,
+    device_type: dlpack::DeviceTypeCode,
+) -> Result<(), String> {
+    ensure_eq!(t.byte_offset, 0, "{}", t.byte_offset);
+    let shape = unsafe { std::slice::from_raw_parts(t.shape, t.ndim as usize) };
+    ensure_eq!(shape.len(), 2, "{}", shape.len());
+    ensure_eq!(shape[0], d0);
+    ensure_eq!(shape[1], d1);
+    ensure!(is_equal::<T>(&t.dtype));
+    ensure!(unsafe { is_tensor_c_contiguous(t) });
+    ensure_eq!(t.ctx.device_type, device_type);
+    Ok(())
+}
+
+pub fn check_3d_tensor<T: ToDataTypeCode>(
+    t: &Tensor,
+    d0: i64,
+    d1: i64,
+    d2: i64,
+    device_type: dlpack::DeviceTypeCode,
+) -> Result<(), String> {
+    ensure_eq!(t.byte_offset, 0, "{}", t.byte_offset);
+    let shape = unsafe { std::slice::from_raw_parts(t.shape, t.ndim as usize) };
+    ensure_eq!(shape.len(), 3, "{}", shape.len());
+    if d0 != -1 {
+        ensure_eq!(shape[0], d0);
+    }
+    if d1 != -1 {
+        ensure_eq!(shape[1], d1);
+    }
+    if d2 != -1 {
+        ensure_eq!(shape[2], d2);
+    }
+    ensure!(is_equal::<T>(&t.dtype));
+    ensure!(unsafe { is_tensor_c_contiguous(t) });
+    ensure_eq!(t.ctx.device_type, device_type);
+    Ok(())
+}
+
+
 
 pub fn get_shape_tensor(t: &Tensor, i_dim: usize) -> Result<i64, String> {
     if i_dim >= t.ndim as usize {
