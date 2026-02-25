@@ -36,7 +36,9 @@ pub unsafe fn is_c_contiguous(shape: *const i64, strides: *const i64, ndim: i32)
     let sh = unsafe { slice::from_raw_parts(shape, n) };
     let st = unsafe { slice::from_raw_parts(strides, n) };
 
-    // 後ろの次元から expected=1 で積み上げる（dim<=1 は無視）
+    // 後ろの次元から expected=1 で積み上げる
+    // dim==0 のときストライド値は不問だが expected の積には含める必要がある
+    // （例: shape=(3,0) の C連続ストライドは (0,1) なので外側の expected は 0 になる）
     let mut expected: i64 = 1;
     for i in (0..n).rev() {
         let dim = sh[i];
@@ -45,9 +47,9 @@ pub unsafe fn is_c_contiguous(shape: *const i64, strides: *const i64, ndim: i32)
             if st[i] != expected {
                 return false;
             }
-            // 次の expected を更新
-            expected = expected.saturating_mul(dim);
         }
+        // dim==0 や dim==1 でも expected を更新する（0が含まれると外側の expected も 0 になる）
+        expected = expected.saturating_mul(dim);
     }
     true
 }
@@ -410,8 +412,6 @@ pub fn check_3d_tensor<T: ToDataTypeCode>(
     ensure_eq!(t.ctx.device_type, device_type);
     Ok(())
 }
-
-
 
 pub fn get_shape_tensor(t: &Tensor, i_dim: usize) -> Result<i64, String> {
     if i_dim >= t.ndim as usize {
