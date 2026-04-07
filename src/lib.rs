@@ -492,3 +492,17 @@ pub fn make_capsule_from_cuvec<T: ToDataTypeCode>(
         pyo3::Py::<PyAny>::from_owned_ptr(py, cap_ptr)
     }
 }
+
+#[macro_export]
+macro_rules! slice {
+    ($tensor:expr, $t:ty) => {
+        unsafe { del_dlpack::slice_from_tensor::<$t>($tensor) }
+    };
+}
+
+#[macro_export]
+macro_rules! slice_mut {
+    ($tensor:expr, $t:ty) => {
+        unsafe { del_dlpack::slice_from_tensor_mut::<$t>($tensor) }
+    };
+}

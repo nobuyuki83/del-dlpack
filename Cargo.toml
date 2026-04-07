@@ -13,4 +13,9 @@ dlpack = "0.2.0"
 pyo3 = { version = "0.26.0", features = ["extension-module"] }
 
 # for push
-del-cudarc-sys = {git = "https://github.com/nobuyuki83/del-cudarc.git", optional = true}
+#del-cudarc-sys = {git = "https://github.com/nobuyuki83/del-cudarc.git", optional = true}
+
+# for develop
+del-cudarc-sys = {path = "../del-cudarc/del-cudarc-sys", optional = true}
+
+
