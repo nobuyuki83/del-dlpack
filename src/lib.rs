@@ -9,7 +9,7 @@ pub fn get_managed_tensor_from_pyany<'a>(
     vtx2idx: &'a pyo3::Bound<'a, PyAny>,
 ) -> PyResult<&'a dlpack::Tensor> {
     let capsule = vtx2idx.cast::<PyCapsule>()?;
-    let ptr = capsule.pointer_checked(None)?.as_ptr() as *mut ManagedTensor;
+    let ptr = capsule.pointer_checked(Some(c"dltensor"))?.as_ptr() as *mut ManagedTensor;
     if ptr.is_null() {
         return Err(pyo3::exceptions::PyRuntimeError::new_err(
             "Null ManagedTensor",
@@ -37,7 +37,7 @@ pub unsafe fn is_c_contiguous(shape: *const i64, strides: *const i64, ndim: i32)
     let st = unsafe { slice::from_raw_parts(strides, n) };
 
     // dim==0 が1つでもあれば要素数が0なのでストライド値に関わらず連続扱い
-    if sh.iter().any(|&d| d == 0) {
+    if sh.contains(&0) {
         return true;
     }
 
