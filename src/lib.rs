@@ -2,14 +2,14 @@ pub use dlpack;
 pub use pyo3;
 
 use dlpack::{DataType, ManagedTensor, Tensor};
-use pyo3::prelude::{PyAnyMethods, PyCapsuleMethods};
+use pyo3::prelude::PyCapsuleMethods;
 use pyo3::{PyAny, PyResult, Python, types::PyCapsule};
 
 pub fn get_managed_tensor_from_pyany<'a>(
     vtx2idx: &'a pyo3::Bound<'a, PyAny>,
 ) -> PyResult<&'a dlpack::Tensor> {
-    let capsule = vtx2idx.downcast::<PyCapsule>()?;
-    let ptr = capsule.pointer() as *mut ManagedTensor;
+    let capsule = vtx2idx.cast::<PyCapsule>()?;
+    let ptr = capsule.pointer_checked(None)?.as_ptr() as *mut ManagedTensor;
     if ptr.is_null() {
         return Err(pyo3::exceptions::PyRuntimeError::new_err(
             "Null ManagedTensor",
@@ -265,7 +265,7 @@ where
             name_ptr,
             Some(capsule_destructor),
         );
-        pyo3::Py::<PyAny>::from_owned_ptr(py, cap_ptr)
+        pyo3::Bound::from_owned_ptr(py, cap_ptr).unbind()
     }
 }
 
@@ -491,7 +491,7 @@ pub fn make_capsule_from_cuvec<T: ToDataTypeCode>(
             name_ptr,
             Some(capsule_destructor),
         );
-        pyo3::Py::<PyAny>::from_owned_ptr(py, cap_ptr)
+        pyo3::Bound::from_owned_ptr(py, cap_ptr).unbind()
     }
 }
 
