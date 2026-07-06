@@ -126,6 +126,12 @@ pub trait ToDataTypeCode {
     fn category() -> dlpack::DataTypeCode;
 }
 
+impl ToDataTypeCode for u8 {
+    fn category() -> dlpack::DataTypeCode {
+        dlpack::data_type_codes::UINT
+    }
+}
+
 impl ToDataTypeCode for u32 {
     fn category() -> dlpack::DataTypeCode {
         dlpack::data_type_codes::UINT
