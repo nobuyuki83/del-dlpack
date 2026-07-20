@@ -1,7 +1,7 @@
 pub use dlpack;
 pub use pyo3;
 
-use dlpack::{DataType, ManagedTensor, Tensor};
+use dlpack::{DataType, ManagedTensor, Tensor, device_type_codes};
 use pyo3::prelude::PyCapsuleMethods;
 use pyo3::{PyAny, PyResult, Python, types::PyCapsule};
 
@@ -163,6 +163,21 @@ impl ToDataTypeCode for f32 {
 }
 
 // ----------------------------------------
+
+pub fn device_type_code_to_str(d: dlpack::DeviceTypeCode) -> &'static str {
+    match d {
+        device_type_codes::GPU => "CUDA",
+        device_type_codes::CPU => "CPU",
+        device_type_codes::METAL => "METAL",
+        device_type_codes::VPI => "VPI",
+        device_type_codes::OPENCL => "OPENCL",
+        device_type_codes::CPU_PINNED => "CPU_PINNED",
+        device_type_codes::ROCM => "ROCM",
+        _ => "Unknown",
+    }
+}
+
+// -----------------------------------------
 
 /// Rust側の所有物をまとめておき、deleterで回収する用
 #[repr(C)]
@@ -360,9 +375,20 @@ pub fn check_1d_tensor<T: ToDataTypeCode>(
         t.byte_offset
     );
     let shape = unsafe { std::slice::from_raw_parts(t.shape, t.ndim as usize) };
-    ensure_eq!(shape.len(), 1, "dimension should be one {}", shape.len());
+    ensure_eq!(
+        shape.len(),
+        1,
+        "dimension should be 1 but it is {}",
+        shape.len()
+    );
     if d0 != -1 {
-        ensure_eq!(shape[0], d0);
+        ensure_eq!(
+            shape[0],
+            d0,
+            "mismatch first size {} should be {}",
+            shape[0],
+            d0
+        );
     }
     ensure!(is_equal::<T>(&t.dtype), "the data type is different");
     ensure!(
@@ -372,9 +398,9 @@ pub fn check_1d_tensor<T: ToDataTypeCode>(
     ensure_eq!(
         t.ctx.device_type,
         device_type,
-        "device_type is different {} {}",
-        t.ctx.device_type,
-        device_type
+        "device_type is different: got {}, but it should be {}",
+        device_type_code_to_str(t.ctx.device_type),
+        device_type_code_to_str(device_type)
     );
     Ok(())
 }
@@ -387,12 +413,42 @@ pub fn check_2d_tensor<T: ToDataTypeCode>(
 ) -> Result<(), String> {
     ensure_eq!(t.byte_offset, 0, "{}", t.byte_offset);
     let shape = unsafe { std::slice::from_raw_parts(t.shape, t.ndim as usize) };
-    ensure_eq!(shape.len(), 2, "{}", shape.len());
-    ensure_eq!(shape[0], d0);
-    ensure_eq!(shape[1], d1);
-    ensure!(is_equal::<T>(&t.dtype));
-    ensure!(unsafe { is_tensor_c_contiguous(t) });
-    ensure_eq!(t.ctx.device_type, device_type);
+    ensure_eq!(
+        shape.len(),
+        2,
+        "dimension should be 2 but it is {}",
+        shape.len()
+    );
+    if d0 != -1 {
+        ensure_eq!(
+            shape[0],
+            d0,
+            "mismatch first size {} should be {}",
+            shape[0],
+            d0
+        );
+    }
+    if d1 != -1 {
+        ensure_eq!(
+            shape[1],
+            d1,
+            "mismatch second size {} should be {}",
+            shape[1],
+            d1
+        );
+    }
+    ensure!(is_equal::<T>(&t.dtype), "the data type is different");
+    ensure!(
+        unsafe { is_tensor_c_contiguous(t) },
+        "the array need to be contiguous"
+    );
+    ensure_eq!(
+        t.ctx.device_type,
+        device_type,
+        "device_type is different: got {}, but it should be {}",
+        device_type_code_to_str(t.ctx.device_type),
+        device_type_code_to_str(device_type)
+    );
     Ok(())
 }
 
@@ -405,19 +461,48 @@ pub fn check_3d_tensor<T: ToDataTypeCode>(
 ) -> Result<(), String> {
     ensure_eq!(t.byte_offset, 0, "{}", t.byte_offset);
     let shape = unsafe { std::slice::from_raw_parts(t.shape, t.ndim as usize) };
-    ensure_eq!(shape.len(), 3, "{}", shape.len());
+    ensure_eq!(
+        shape.len(),
+        3,
+        "dimenstion should be 3 but it is {}",
+        shape.len()
+    );
     if d0 != -1 {
-        ensure_eq!(shape[0], d0);
+        ensure_eq!(
+            shape[0],
+            d0,
+            "mismatch first size {} should be {}",
+            shape[0],
+            d0
+        );
     }
     if d1 != -1 {
-        ensure_eq!(shape[1], d1);
+        ensure_eq!(
+            shape[1],
+            d1,
+            "mismatch second size {} should be {}",
+            shape[1],
+            d1
+        );
     }
     if d2 != -1 {
-        ensure_eq!(shape[2], d2);
+        ensure_eq!(
+            shape[2],
+            d2,
+            "mismatch third size {} should be {}",
+            shape[2],
+            d2
+        );
     }
     ensure!(is_equal::<T>(&t.dtype));
     ensure!(unsafe { is_tensor_c_contiguous(t) });
-    ensure_eq!(t.ctx.device_type, device_type);
+    ensure_eq!(
+        t.ctx.device_type,
+        device_type,
+        "device_type is different: got {}, but it should be {}",
+        device_type_code_to_str(t.ctx.device_type),
+        device_type_code_to_str(device_type)
+    );
     Ok(())
 }
 
