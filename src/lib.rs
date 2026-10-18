@@ -1,3 +1,5 @@
+#[cfg(feature = "cuda")]
+pub use del_cudarc_sys;
 pub use dlpack;
 pub use pyo3;
 
